@@ -33,6 +33,10 @@ CREATE TABLE IF NOT EXISTS "agent"."agent" (
   "version" TEXT NOT NULL,
   "health_status" TEXT NOT NULL,
   "last_ping" TIMESTAMPTZ NOT NULL,
+  "ip_address" TEXT NOT NULL,
+  "host_name" TEXT NOT NULL,
+  "running_as_user_name" TEXT,
+  "environment_settings" TEXT,
   "metadata" JSON,
   FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id")
 );
