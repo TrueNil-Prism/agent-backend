@@ -14,6 +14,15 @@ class Agent(CoreModel):
     version = TextField(null=False)
     health_status = TextField(null=False, default=AGENT_INITIALIZED)
     last_ping = DateTimeTZField(default=datetime.datetime.now(tz=datetime.timezone.utc))
+    ip_address = TextField(null=False)
+    host_name = TextField(null=False)
+    # The Host User Name under which the agent is running on the host
+    running_as_user_name = TextField(null=True)
+    """
+    List of environment variables, settings, and their values. 
+    Any password related values will be `masked` by the agent before transmitting to the backend
+    """
+    environment_settings = TextField(null=True)
     # Unstructured Metadata in JSON form. This would store OS information, and miscellaneous ones
     metadata = JSONField(null=True)
 
