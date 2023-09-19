@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from os import environ
 from playhouse.postgres_ext import *
 
-from truenil.model.core.models import CoreModel
+from truenil.data.model.core.models import CoreModel
 
 AGENT_INITIALIZED = "initialized"
 
