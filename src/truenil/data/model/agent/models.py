@@ -115,3 +115,22 @@ agent_bucket_unique_idx = AgentBucket.index(
     unique=True)
 AgentBucket.add_index(agent_bucket_unique_idx)
 
+
+class AgentMetrics(CoreModel):
+    agent = ForeignKeyField(Agent, null=False)
+    """
+    metric_name is one of the below. Exact case
+        cpu_usage
+        number_of_vcpu
+        max_memory
+        memory_used
+        disk_space
+        free_space
+        network_connectivity
+        response_time
+        error_rate
+    """
+    metric_name = TextField(null=False)
+    metric_value = DoubleField(null=False)
+    # Optional field
+    process_name = TextField(null=True)
