@@ -93,3 +93,17 @@ CREATE TABLE IF NOT EXISTS "agent_bucket" (
   FOREIGN KEY ("agent_id") REFERENCES "agent"."agent" ("id"),
   FOREIGN KEY ("bucket_id") REFERENCES "agent"."bucket" ("id")
 );
+CREATE TABLE IF NOT EXISTS "agentmetrics" (
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "created_at" TIMESTAMPTZ NOT NULL,
+  "updated_at" TIMESTAMPTZ NOT NULL,
+  "created_by" TEXT NOT NULL,
+  "updated_by" TEXT NOT NULL,
+  "organization_id" BIGINT NOT NULL,
+  "agent_id" BIGINT NOT NULL,
+  "metric_name" TEXT NOT NULL,
+  "metric_value" DOUBLE PRECISION NOT NULL,
+  "process_name" TEXT,
+  FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id"),
+  FOREIGN KEY ("agent_id") REFERENCES "agent"."agent" ("id")
+);
