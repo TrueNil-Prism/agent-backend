@@ -107,6 +107,7 @@ class AgentBucket(CoreModel):
 
     class Meta:
         table_name = "agent_bucket"
+        schema = "agent"
 
 
 agent_bucket_unique_idx = AgentBucket.index(
@@ -134,3 +135,7 @@ class AgentMetrics(CoreModel):
     metric_value = DoubleField(null=False)
     # Optional field
     process_name = TextField(null=True)
+
+    class Meta:
+        table_name = "agent_metrics"
+        schema = "agent"
