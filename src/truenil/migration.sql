@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS "agent"."agent_file" (
   FOREIGN KEY ("agent_id") REFERENCES "agent"."agent" ("id"),
   FOREIGN KEY ("file_id") REFERENCES "agent"."file" ("id")
 );
-CREATE TABLE IF NOT EXISTS "agent_bucket" (
+CREATE TABLE IF NOT EXISTS "agent"."agent_bucket" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "created_at" TIMESTAMPTZ NOT NULL,
   "updated_at" TIMESTAMPTZ NOT NULL,
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS "agent_bucket" (
   FOREIGN KEY ("agent_id") REFERENCES "agent"."agent" ("id"),
   FOREIGN KEY ("bucket_id") REFERENCES "agent"."bucket" ("id")
 );
-CREATE TABLE IF NOT EXISTS "agentmetrics" (
+CREATE TABLE IF NOT EXISTS "agent"."agent_metrics" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "created_at" TIMESTAMPTZ NOT NULL,
   "updated_at" TIMESTAMPTZ NOT NULL,
