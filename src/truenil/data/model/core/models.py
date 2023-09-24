@@ -4,12 +4,15 @@ from dotenv import load_dotenv
 from os import environ
 from playhouse.postgres_ext import *
 
+from truenil.data.model.ConnectionState import PeeweeConnectionState
+
 load_dotenv()
 PG_HOST = environ.get("POSTGRES_HOST_NAME", default="localhost")
 POSTGRES_USER_NAME = environ.get("POSTGRES_USER_NAME", default="postgres")
 POSTGRES_USER_PASSWORD = environ.get("POSTGRES_USER_PASSWORD", default="password")
 #initialize connection to database
 db = PostgresqlExtDatabase("truenil", user=POSTGRES_USER_NAME, password=POSTGRES_USER_PASSWORD, host=PG_HOST)
+db._state = PeeweeConnectionState()
 
 
 class BaseModel(Model):
