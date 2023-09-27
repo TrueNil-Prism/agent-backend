@@ -107,3 +107,34 @@ CREATE TABLE IF NOT EXISTS "agent"."agent_metrics" (
   FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id"),
   FOREIGN KEY ("agent_id") REFERENCES "agent"."agent" ("id")
 );
+CREATE TABLE IF NOT EXISTS "agent"."agent_token" (
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "created_at" TIMESTAMPTZ NOT NULL,
+  "updated_at" TIMESTAMPTZ NOT NULL,
+  "created_by" TEXT NOT NULL,
+  "updated_by" TEXT NOT NULL,
+  "organization_id" BIGINT NOT NULL,
+  "token" TEXT NOT NULL,
+  "is_active" BOOLEAN NOT NULL,
+  FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id")
+)
+;
+CREATE TABLE IF NOT EXISTS "agent"."agent_token_audit" (
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "created_at" TIMESTAMPTZ NOT NULL,
+  "updated_at" TIMESTAMPTZ NOT NULL,
+  "created_by" TEXT NOT NULL,
+  "updated_by" TEXT NOT NULL,
+  "organization_id" BIGINT NOT NULL,
+  "agent_id" BIGINT NOT NULL,
+  "token_id" BIGINT NOT NULL,
+  FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id"),
+  FOREIGN KEY ("agent_id") REFERENCES "agent"."agent" ("id"),
+  FOREIGN KEY ("token_id") REFERENCES "agent"."agent_token" ("id")
+)
+;
+
+create unique index on "agent"."agent_token"(token);
+create unique index on agent.agent_file(agent_id,file_id);
+create unique index on agent.agent_bucket(agent_id,bucket_id);
+create index on core.organization_user(organization_id, user_id);
