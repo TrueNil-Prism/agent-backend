@@ -83,28 +83,34 @@ async def register_agent(agent: Agent, authorization: Annotated[list[str] | None
 
 
 @app.post("/v1/metrics/")
-async def metrics(metric_container: MetricContainer):
-    existing_agent = None
-    # get Agent based on UUID
-    try:
-        existing_agent = DataAgent.select().where(DataAgent.uuid == metric_container.agent_uuid).where(
-            DataAgent.health_status != 'lost').get()
-        for metric in metric_container.agent_metrics:
-            """
-            metric_name : str
-    metric_value : float
-    # Optional field
-    process_name : Optional[str]
-            """
-            if metric.process_name is not None:
-                AgentMetrics.create(agent=existing_agent, metric_name=metric.metric_name,
-                                    metric_value=metric.metric_value, process_name=metric.process_name,
-                                    organization=existing_agent.organization)
-            else:
-                AgentMetrics.create(agent=existing_agent, metric_name=metric.metric_name,
-                                    metric_value=metric.metric_value, organization=existing_agent.organization)
-    except DoesNotExist:
-        raise HTTPException(status_code=404, detail="Agent not found")
+async def metrics(metric_container: MetricContainer, authorization: Annotated[list[str] | None, Header()] = None):
+    agent_token, is_valid = validate_token(get_bearer_token_from_header(authorization))
+    if is_valid:
+        existing_agent = None
+        # get Agent based on UUID
+        try:
+            existing_agent = DataAgent.select().where(DataAgent.uuid == metric_container.agent_uuid).where(
+                DataAgent.health_status != 'lost').get()
+            for metric in metric_container.agent_metrics:
+                """
+                metric_name : str
+        metric_value : float
+        # Optional field
+        process_name : Optional[str]
+                """
+                if metric.process_name is not None:
+                    AgentMetrics.create(agent=existing_agent, metric_name=metric.metric_name,
+                                        metric_value=metric.metric_value, process_name=metric.process_name,
+                                        organization=existing_agent.organization)
+                else:
+                    AgentMetrics.create(agent=existing_agent, metric_name=metric.metric_name,
+                                        metric_value=metric.metric_value, organization=existing_agent.organization)
+            AgentTokenAudit.create(agent=existing_agent, token=agent_token, organization=existing_agent.organization)
+        except DoesNotExist:
+            raise HTTPException(status_code=404, detail="Agent not found")
+    else:
+        raise HTTPException(status_code=401, detail="Not Authorized")
+
     return {"message": "success", "agent_id": existing_agent.id}
 
 
