@@ -139,3 +139,27 @@ class AgentMetrics(CoreModel):
     class Meta:
         table_name = "agent_metrics"
         schema = "agent"
+
+
+class AgentToken(CoreModel):
+    token = TextField(null=False)
+    is_active = BooleanField(default=True, null=False)
+
+    class Meta:
+        table_name = "agent_token"
+        schema = "agent"
+
+
+agent_token_unique_idx = AgentToken.index(
+    AgentToken.token,
+    unique=True)
+AgentToken.add_index(agent_token_unique_idx)
+
+
+class AgentTokenAudit(CoreModel):
+    agent = ForeignKeyField(Agent, null=False)
+    token = ForeignKeyField(AgentToken, null=False)
+
+    class Meta:
+        table_name = "agent_token_audit"
+        schema = "agent"
