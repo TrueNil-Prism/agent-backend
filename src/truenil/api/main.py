@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import uvicorn
 from fastapi import FastAPI, HTTPException, Header
 from peewee import DoesNotExist
@@ -44,12 +46,21 @@ async def register_agent(agent: Agent, authorization: Annotated[list[str] | None
             existing_agent = DataAgent.select().where(DataAgent.uuid == agent.uuid).where(
                 DataAgent.health_status != 'lost').get()
             if compare_agent(agent, existing_agent):
-                existing_agent.version = agent.version,
-                existing_agent.health_status = agent.health_status,
-                existing_agent.running_as_user_name = agent.running_as_user_name,
-                existing_agent.environment_settings = agent.environment_settings,
-                existing_agent.metadata = agent.agent_metadata
-                existing_agent.save()
+                # existing_agent.version = agent.version,
+                # existing_agent.health_status = agent.health_status,
+                # existing_agent.running_as_user_name = agent.running_as_user_name,
+                # existing_agent.environment_settings = agent.environment_settings,
+                # existing_agent.metadata = agent.agent_metadata
+                # existing_agent.save()
+                (DataAgent.update(version=agent.version,
+                                  health_status=agent.health_status,
+                                  running_as_user_name=agent.running_as_user_name,
+                                  environment_settings=agent.environment_settings,
+                                  metadata=agent.agent_metadata,
+                                  updated_at=datetime.now(),
+                                  agent_state=agent.agent_state
+                                 ).where(DataAgent.id==existing_agent.id).execute()
+                )
             else:
                 existing_agent.health_status = 'lost'
                 existing_agent.save()
@@ -61,7 +72,8 @@ async def register_agent(agent: Agent, authorization: Annotated[list[str] | None
                                                  host_name=agent.host_name,
                                                  running_as_user_name=agent.running_as_user_name,
                                                  environment_settings=agent.environment_settings,
-                                                 metadata=agent.agent_metadata
+                                                 metadata=agent.agent_metadata,
+                                                 agent_state=agent.agent_state
                                                  )
                 existing_agent = created_agent
         except DoesNotExist:
@@ -73,7 +85,8 @@ async def register_agent(agent: Agent, authorization: Annotated[list[str] | None
                                              host_name=agent.host_name,
                                              running_as_user_name=agent.running_as_user_name,
                                              environment_settings=agent.environment_settings,
-                                             metadata=agent.agent_metadata
+                                             metadata=agent.agent_metadata,
+                                             agent_state=agent.agent_state
                                              )
             existing_agent = created_agent
         AgentTokenAudit.create(agent=existing_agent, token=agent_token, organization=agent.organization)
@@ -113,6 +126,10 @@ async def metrics(metric_container: MetricContainer, authorization: Annotated[li
 
     return {"message": "success", "agent_id": existing_agent.id}
 
+
+@app.post("/v1/health/")
+async def health(agent: Agent, authorization: Annotated[list[str] | None, Header()] = None):
+    return await register_agent(agent, authorization)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

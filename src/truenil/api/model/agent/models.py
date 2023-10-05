@@ -39,4 +39,5 @@ class Agent(BaseModel):
     # Unstructured Metadata in JSON form. This would store OS information, and miscellaneous ones
     agent_metadata: Optional[Json[Any]]
     organization: str
+    agent_state: str
 

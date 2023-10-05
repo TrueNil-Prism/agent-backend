@@ -25,6 +25,7 @@ class Agent(CoreModel):
     environment_settings = TextField(null=True)
     # Unstructured Metadata in JSON form. This would store OS information, and miscellaneous ones
     metadata = JSONField(null=True)
+    agent_state = TextField(null=False)
 
     class Meta:
         table_name = "agent"

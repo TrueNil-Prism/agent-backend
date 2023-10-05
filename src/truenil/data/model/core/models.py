@@ -7,17 +7,17 @@ from playhouse.postgres_ext import *
 from truenil.data.model.ConnectionState import PeeweeConnectionState
 
 load_dotenv()
-PG_HOST = environ.get("POSTGRES_HOST_NAME", default="localhost")
+PG_HOST = environ.get("POSTGRES_HOST_NAME", default="dev-postgres-db.cgx6oxkkzdoj.us-west-1.rds.amazonaws.com")
 POSTGRES_USER_NAME = environ.get("POSTGRES_USER_NAME", default="postgres")
-POSTGRES_USER_PASSWORD = environ.get("POSTGRES_USER_PASSWORD", default="password")
+POSTGRES_USER_PASSWORD = environ.get("POSTGRES_USER_PASSWORD", default="OFbPZJle4GaVBQwgD7rQ")
 #initialize connection to database
-db = PostgresqlExtDatabase("truenil", user=POSTGRES_USER_NAME, password=POSTGRES_USER_PASSWORD, host=PG_HOST)
+db = PostgresqlExtDatabase("postgres", user=POSTGRES_USER_NAME, password=POSTGRES_USER_PASSWORD, host=PG_HOST)
 db._state = PeeweeConnectionState()
 
 
 class BaseModel(Model):
-    created_at= DateTimeTZField(default=datetime.datetime.now())
-    updated_at= DateTimeTZField(default=datetime.datetime.now())
+    created_at= DateTimeTZField(default=datetime.datetime.now)
+    updated_at= DateTimeTZField(default=datetime.datetime.now)
     created_by = TextField(default="SYSTEM")
     updated_by = TextField(default="SYSTEM")
 
