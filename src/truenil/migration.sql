@@ -1,3 +1,4 @@
+/Users/kartikla/dev/truenil/agent-backend/venv/bin/python /Users/kartikla/dev/truenil/agent-backend/src/truenil/migration.py
 CREATE TABLE IF NOT EXISTS "core"."organization" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "created_at" TIMESTAMPTZ NOT NULL,
@@ -7,7 +8,8 @@ CREATE TABLE IF NOT EXISTS "core"."organization" (
   "name" TEXT NOT NULL,
   "website" TEXT NOT NULL,
   "details" TEXT NOT NULL
-);
+)
+;
 CREATE TABLE IF NOT EXISTS "core"."organization_user" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "created_at" TIMESTAMPTZ NOT NULL,
@@ -21,7 +23,8 @@ CREATE TABLE IF NOT EXISTS "core"."organization_user" (
   "idp_provider" TEXT,
   "is_active" BOOLEAN NOT NULL,
   FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id")
-);
+)
+;
 CREATE TABLE IF NOT EXISTS "agent"."agent" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "created_at" TIMESTAMPTZ NOT NULL,
@@ -38,8 +41,10 @@ CREATE TABLE IF NOT EXISTS "agent"."agent" (
   "running_as_user_name" TEXT,
   "environment_settings" TEXT,
   "metadata" JSON,
+  "agent_state" TEXT NOT NULL,
   FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id")
-);
+)
+;
 CREATE TABLE IF NOT EXISTS "agent"."bucket" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "created_at" TIMESTAMPTZ NOT NULL,
@@ -50,7 +55,8 @@ CREATE TABLE IF NOT EXISTS "agent"."bucket" (
   "bucket_key" TEXT NOT NULL,
   "cloud" TEXT NOT NULL,
   FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id")
-);
+)
+;
 CREATE TABLE IF NOT EXISTS "agent"."file" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "created_at" TIMESTAMPTZ NOT NULL,
@@ -66,7 +72,8 @@ CREATE TABLE IF NOT EXISTS "agent"."file" (
   "compression_type" TEXT NOT NULL,
   FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id"),
   FOREIGN KEY ("bucket_id") REFERENCES "agent"."bucket" ("id")
-);
+)
+;
 CREATE TABLE IF NOT EXISTS "agent"."agent_file" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "created_at" TIMESTAMPTZ NOT NULL,
@@ -79,7 +86,8 @@ CREATE TABLE IF NOT EXISTS "agent"."agent_file" (
   FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id"),
   FOREIGN KEY ("agent_id") REFERENCES "agent"."agent" ("id"),
   FOREIGN KEY ("file_id") REFERENCES "agent"."file" ("id")
-);
+)
+;
 CREATE TABLE IF NOT EXISTS "agent"."agent_bucket" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "created_at" TIMESTAMPTZ NOT NULL,
@@ -92,7 +100,8 @@ CREATE TABLE IF NOT EXISTS "agent"."agent_bucket" (
   FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id"),
   FOREIGN KEY ("agent_id") REFERENCES "agent"."agent" ("id"),
   FOREIGN KEY ("bucket_id") REFERENCES "agent"."bucket" ("id")
-);
+)
+;
 CREATE TABLE IF NOT EXISTS "agent"."agent_metrics" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "created_at" TIMESTAMPTZ NOT NULL,
@@ -106,7 +115,8 @@ CREATE TABLE IF NOT EXISTS "agent"."agent_metrics" (
   "process_name" TEXT,
   FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id"),
   FOREIGN KEY ("agent_id") REFERENCES "agent"."agent" ("id")
-);
+)
+;
 CREATE TABLE IF NOT EXISTS "agent"."agent_token" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "created_at" TIMESTAMPTZ NOT NULL,
