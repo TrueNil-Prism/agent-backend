@@ -12,7 +12,7 @@ POSTGRES_USER_NAME = environ.get("POSTGRES_USER_NAME", default="postgres")
 POSTGRES_USER_PASSWORD = environ.get("POSTGRES_USER_PASSWORD", default="password")
 
 #initialize connection to database
-db = PostgresqlExtDatabase("postgres", user=POSTGRES_USER_NAME, password=POSTGRES_USER_PASSWORD, host=PG_HOST)
+db = PostgresqlExtDatabase("truenil", user=POSTGRES_USER_NAME, password=POSTGRES_USER_PASSWORD, host=PG_HOST)
 db._state = PeeweeConnectionState()
 
 

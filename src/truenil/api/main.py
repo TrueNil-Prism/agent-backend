@@ -1,12 +1,14 @@
 from datetime import datetime
+from typing import Annotated
+from urllib.parse import urlparse
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Header
 from peewee import DoesNotExist
 
-from truenil.api.model.agent.models import Agent, MetricContainer
-from truenil.data.model.agent.models import Agent as DataAgent, AgentMetrics, AgentToken, AgentTokenAudit
-from typing import Annotated
+from truenil.api.model.agent.models import Agent, MetricContainer, AgentFiles
+from truenil.data.model.agent.models import Agent as DataAgent, AgentMetrics, AgentToken, AgentTokenAudit, Bucket, File, \
+    AgentFile, AgentBucket
 
 app = FastAPI()
 
@@ -36,6 +38,11 @@ def get_bearer_token_from_header(auth_token):
         return None
 
 
+def get_agent(uuid):
+    return DataAgent.select().where(DataAgent.uuid == uuid).where(
+        DataAgent.health_status != 'lost').get()
+
+
 @app.post("/v1/register_agent/")
 async def register_agent(agent: Agent, authorization: Annotated[list[str] | None, Header()] = None):
     agent_token, is_valid = validate_token(get_bearer_token_from_header(authorization))
@@ -43,8 +50,7 @@ async def register_agent(agent: Agent, authorization: Annotated[list[str] | None
         existing_agent = None
         # get Agent based on UUID
         try:
-            existing_agent = DataAgent.select().where(DataAgent.uuid == agent.uuid).where(
-                DataAgent.health_status != 'lost').get()
+            existing_agent = get_agent(agent.uuid)
             if compare_agent(agent, existing_agent):
                 # existing_agent.version = agent.version,
                 # existing_agent.health_status = agent.health_status,
@@ -59,8 +65,8 @@ async def register_agent(agent: Agent, authorization: Annotated[list[str] | None
                                   metadata=agent.agent_metadata,
                                   updated_at=datetime.now(),
                                   agent_state=agent.agent_state
-                                 ).where(DataAgent.id==existing_agent.id).execute()
-                )
+                                  ).where(DataAgent.id == existing_agent.id).execute()
+                 )
             else:
                 existing_agent.health_status = 'lost'
                 existing_agent.save()
@@ -102,8 +108,7 @@ async def metrics(metric_container: MetricContainer, authorization: Annotated[li
         existing_agent = None
         # get Agent based on UUID
         try:
-            existing_agent = DataAgent.select().where(DataAgent.uuid == metric_container.agent_uuid).where(
-                DataAgent.health_status != 'lost').get()
+            existing_agent = get_agent(metric_container.agent_uuid)
             for metric in metric_container.agent_metrics:
                 """
                 metric_name : str
@@ -127,9 +132,57 @@ async def metrics(metric_container: MetricContainer, authorization: Annotated[li
     return {"message": "success", "agent_id": existing_agent.id}
 
 
+@app.post("/v1/file/")
+async def files(agent_file_container: AgentFiles, authorization: Annotated[list[str] | None, Header()] = None):
+    agent_token, is_valid = validate_token(get_bearer_token_from_header(authorization))
+    if is_valid:
+        # get Agent based on UUID
+        try:
+            existing_agent = get_agent(agent_file_container.agent_uuid)
+            for agent_file in agent_file_container.agent_files:
+                # parse url
+                url_components = urlparse(agent_file.file_url, allow_fragments=False)
+                bucket_name = f"{url_components.scheme}://{url_components.netloc}"
+                # get bucket, create if not exists
+                existing_bucket = None
+                try:
+                    existing_bucket = Bucket.select().where(Bucket.bucket_key == bucket_name).get()
+                except DoesNotExist:
+                    existing_bucket = Bucket.create(bucket_key=bucket_name, cloud="aws",organization_id=existing_agent.organization)
+                # get file, create if not exists
+                existing_file = None
+                try:
+                    existing_file = File.select().where(File.file_path == agent_file.file_url).get()
+                    existing_file.file_path = agent_file.file_url
+                    existing_file.encryption_status = agent_file.encryption_status
+                    existing_file.storage_type = url_components.scheme
+                    existing_file.file_type = agent_file.file_type
+                    existing_file.compression_type = agent_file.compression_type
+                    existing_file.updated_at = datetime.now(),
+                    existing_file.save()
+                    # update file
+                except DoesNotExist:
+                    # create file
+                    existing_file = File.create(organization_id=existing_agent.organization, file_path=agent_file.file_url,
+                                                encryption_status=agent_file.encryption_status,
+                                                storage_type=url_components.scheme, file_type=agent_file.file_type,
+                                                compression_type=agent_file.compression_type, bucket=existing_bucket)
+                # associate file with agent
+                AgentFile.get_or_create(agent=existing_agent, file=existing_file, organization_id=existing_agent.organization)
+                # associate bucket with agent
+                AgentBucket.get_or_create(agent=existing_agent, bucket=existing_bucket, organization_id=existing_agent.organization)
+        except DoesNotExist:
+            raise HTTPException(status_code=404, detail="Agent not found")
+    else:
+        raise HTTPException(status_code=401, detail="Not Authorized")
+
+    return {"message": "success", "agent_id": existing_agent.id}
+
+
 @app.post("/v1/health/")
 async def health(agent: Agent, authorization: Annotated[list[str] | None, Header()] = None):
     return await register_agent(agent, authorization)
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
