@@ -41,3 +41,15 @@ class Agent(BaseModel):
     organization: str
     agent_state: str
 
+
+class DataFile(BaseModel):
+    file_url: str
+    encryption_status: str
+    # storage_type: str
+    file_type: str
+    compression_type: str
+
+
+class AgentFiles(BaseModel):
+    agent_uuid: str
+    agent_files: list[DataFile]
