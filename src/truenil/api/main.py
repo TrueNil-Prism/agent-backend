@@ -6,9 +6,10 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Header
 from peewee import DoesNotExist
 
-from truenil.api.model.agent.models import Agent, MetricContainer, AgentFiles, UserFilePermission
+from truenil.api.model.agent.models import Agent, MetricContainer, AgentFiles, UserFilePermission, \
+    AgentFileAuditContainer
 from truenil.data.model.agent.models import Agent as DataAgent, AgentMetrics, AgentToken, AgentTokenAudit, Bucket, File, \
-    AgentFile, AgentBucket, UserFilePermissions
+    AgentFile, AgentBucket, UserFilePermissions, AgentFileAudit
 
 app = FastAPI()
 
@@ -56,12 +57,6 @@ async def register_agent(agent: Agent, authorization: Annotated[list[str] | None
         try:
             existing_agent = get_agent(agent.uuid)
             if compare_agent(agent, existing_agent):
-                # existing_agent.version = agent.version,
-                # existing_agent.health_status = agent.health_status,
-                # existing_agent.running_as_user_name = agent.running_as_user_name,
-                # existing_agent.environment_settings = agent.environment_settings,
-                # existing_agent.metadata = agent.agent_metadata
-                # existing_agent.save()
                 (DataAgent.update(version=agent.version,
                                   health_status=agent.health_status,
                                   running_as_user_name=agent.running_as_user_name,
@@ -221,6 +216,32 @@ async def user_file_permissions(user_file_permissions: list[UserFilePermission],
                                            permissions=permission.permissions, user=permission.user_name)
     else:
         raise HTTPException(status_code=401, detail="Not Authorized")
+
+
+@app.post("/v1/file_audits/")
+async def file_audit_lines(audit_container: AgentFileAuditContainer, authorization: Annotated[list[str] | None, Header()] = None):
+    agent_token, is_valid = validate_token(get_bearer_token_from_header(authorization))
+    if is_valid:
+        existing_agent = None
+        # get Agent based on UUID
+        try:
+            existing_agent = get_agent(audit_container.agent_uuid)
+            for audit_line in audit_container.audit_lines:
+                file_name: str
+                user_name: str
+                operation: str
+                AgentFileAudit.create(agent=existing_agent,
+                                      organization=existing_agent.organization,
+                                      file_name=audit_line.file_name,
+                                      user_name=audit_line.user_name,
+                                      user_email=audit_line.user_email,
+                                      operation=audit_line.operation)
+        except DoesNotExist:
+            raise HTTPException(status_code=404, detail="Agent not found")
+    else:
+        raise HTTPException(status_code=401, detail="Not Authorized")
+
+    return {"message": "success", "agent_id": existing_agent.id}
 
 
 if __name__ == "__main__":

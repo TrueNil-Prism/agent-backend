@@ -17,10 +17,10 @@ class ReportedAgentMetrics(BaseModel):
         response_time
         error_rate
     """
-    metric_name : str
-    metric_value : float
+    metric_name: str
+    metric_value: float
     # Optional field
-    process_name : str | None = None
+    process_name: str | None = None
 
 
 class MetricContainer(BaseModel):
@@ -59,3 +59,15 @@ class UserFilePermission(BaseModel):
     file_url: str
     user_name: str
     permissions: Optional[list[Any]]
+
+
+class AgentFileAudit(BaseModel):
+    file_name: str
+    user_name: str
+    operation: str
+    user_email: str
+
+
+class AgentFileAuditContainer(BaseModel):
+    agent_uuid: str
+    audit_lines: list[AgentFileAudit]

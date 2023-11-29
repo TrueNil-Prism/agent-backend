@@ -2,7 +2,7 @@ from playhouse.migrate  import *
 from playhouse.reflection import print_table_sql, print_model
 
 from truenil.data.model.agent.models import Agent, Bucket, File, AgentFile, AgentBucket, AgentMetrics, AgentToken, \
-    AgentTokenAudit, UserFilePermissions
+    AgentTokenAudit, UserFilePermissions, AgentFileAudit
 from truenil.data.model.core.models import Organization, User
 
 print_table_sql(Organization)
@@ -26,3 +26,5 @@ print(";")
 print_table_sql(AgentTokenAudit)
 print(";")
 print_table_sql(UserFilePermissions)
+print(";")
+print_table_sql(AgentFileAudit)
