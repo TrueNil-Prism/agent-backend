@@ -143,8 +143,48 @@ CREATE TABLE IF NOT EXISTS "agent"."agent_token_audit" (
   FOREIGN KEY ("token_id") REFERENCES "agent"."agent_token" ("id")
 )
 ;
-
+CREATE TABLE IF NOT EXISTS "agent"."user_file_permissions" (
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "created_at" TIMESTAMPTZ NOT NULL,
+  "updated_at" TIMESTAMPTZ NOT NULL,
+  "created_by" TEXT NOT NULL,
+  "updated_by" TEXT NOT NULL,
+  "organization_id" BIGINT NOT NULL,
+  "file_id" BIGINT NOT NULL,
+  "user" TEXT NOT NULL,
+  "permissions" JSON NOT NULL,
+  FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id"),
+  FOREIGN KEY ("file_id") REFERENCES "agent"."file" ("id")
+)CREATE TABLE IF NOT EXISTS "agent"."user_file_permissions" (
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "created_at" TIMESTAMPTZ NOT NULL,
+  "updated_at" TIMESTAMPTZ NOT NULL,
+  "created_by" TEXT NOT NULL,
+  "updated_by" TEXT NOT NULL,
+  "organization_id" BIGINT NOT NULL,
+  "file_id" BIGINT NOT NULL,
+  "user" TEXT NOT NULL,
+  "permissions" JSON NOT NULL,
+  FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id"),
+  FOREIGN KEY ("file_id") REFERENCES "agent"."file" ("id")
+);
 create unique index on "agent"."agent_token"(token);
 create unique index on agent.agent_file(agent_id,file_id);
 create unique index on agent.agent_bucket(agent_id,bucket_id);
 create index on core.organization_user(organization_id, user_id);
+
+;
+CREATE TABLE IF NOT EXISTS "agent"."agent_file_audit" (
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "created_at" TIMESTAMPTZ NOT NULL,
+  "updated_at" TIMESTAMPTZ NOT NULL,
+  "created_by" TEXT NOT NULL,
+  "updated_by" TEXT NOT NULL,
+  "organization_id" BIGINT NOT NULL,
+  "agent_id" BIGINT NOT NULL,
+  "file_name" TEXT NOT NULL,
+  "user_name" TEXT NOT NULL,
+  "operation" TEXT NOT NULL,
+  FOREIGN KEY ("organization_id") REFERENCES "core"."organization" ("id"),
+  FOREIGN KEY ("agent_id") REFERENCES "agent"."agent" ("id")
+);

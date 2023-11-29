@@ -164,3 +164,25 @@ class AgentTokenAudit(CoreModel):
     class Meta:
         table_name = "agent_token_audit"
         schema = "agent"
+
+
+class UserFilePermissions(CoreModel):
+    file = ForeignKeyField(File, null=False)
+    user = TextField(null=False)
+    permissions = JSONField(null=False)
+
+    class Meta:
+        table_name = "user_file_permissions"
+        schema = "agent"
+
+
+class AgentFileAudit(CoreModel):
+    agent = ForeignKeyField(Agent, null=False)
+    user_name = TextField(null=False)
+    user_email= TextField(null=False)
+    file_name = TextField(null=False)
+    operation = TextField(null=False)
+
+    class Meta:
+        table_name = "agent_file_audit"
+        schema = "agent"

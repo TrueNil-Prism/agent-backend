@@ -6,9 +6,10 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Header
 from peewee import DoesNotExist
 
-from truenil.api.model.agent.models import Agent, MetricContainer, AgentFiles
+from truenil.api.model.agent.models import Agent, MetricContainer, AgentFiles, UserFilePermission, \
+    AgentFileAuditContainer
 from truenil.data.model.agent.models import Agent as DataAgent, AgentMetrics, AgentToken, AgentTokenAudit, Bucket, File, \
-    AgentFile, AgentBucket
+    AgentFile, AgentBucket, UserFilePermissions, AgentFileAudit
 
 app = FastAPI()
 
@@ -43,6 +44,10 @@ def get_agent(uuid):
         DataAgent.health_status != 'lost').get()
 
 
+def get_file(file_url):
+    return File.select().where(File.file_path == file_url).get()
+
+
 @app.post("/v1/register_agent/")
 async def register_agent(agent: Agent, authorization: Annotated[list[str] | None, Header()] = None):
     agent_token, is_valid = validate_token(get_bearer_token_from_header(authorization))
@@ -52,12 +57,6 @@ async def register_agent(agent: Agent, authorization: Annotated[list[str] | None
         try:
             existing_agent = get_agent(agent.uuid)
             if compare_agent(agent, existing_agent):
-                # existing_agent.version = agent.version,
-                # existing_agent.health_status = agent.health_status,
-                # existing_agent.running_as_user_name = agent.running_as_user_name,
-                # existing_agent.environment_settings = agent.environment_settings,
-                # existing_agent.metadata = agent.agent_metadata
-                # existing_agent.save()
                 (DataAgent.update(version=agent.version,
                                   health_status=agent.health_status,
                                   running_as_user_name=agent.running_as_user_name,
@@ -148,14 +147,15 @@ async def files(agent_file_container: AgentFiles, authorization: Annotated[list[
                 try:
                     existing_bucket = Bucket.select().where(Bucket.bucket_key == bucket_name).get()
                 except DoesNotExist:
-                    existing_bucket = Bucket.create(bucket_key=bucket_name, cloud="aws",organization_id=existing_agent.organization)
+                    existing_bucket = Bucket.create(bucket_key=bucket_name, cloud="aws",
+                                                    organization_id=existing_agent.organization)
                 # get file, create if not exists
                 existing_file = None
                 try:
                     existing_file = File.select().where(File.file_path == agent_file.file_url).get()
                     existing_file.file_path = agent_file.file_url
                     existing_file.encryption_status = agent_file.encryption_status
-                    existing_file.storage_type = url_components.scheme
+                    existing_file.storage_type = agent_file.storage_type
                     existing_file.file_type = agent_file.file_type
                     existing_file.compression_type = agent_file.compression_type
                     existing_file.updated_at = datetime.now(),
@@ -163,14 +163,17 @@ async def files(agent_file_container: AgentFiles, authorization: Annotated[list[
                     # update file
                 except DoesNotExist:
                     # create file
-                    existing_file = File.create(organization_id=existing_agent.organization, file_path=agent_file.file_url,
+                    existing_file = File.create(organization_id=existing_agent.organization,
+                                                file_path=agent_file.file_url,
                                                 encryption_status=agent_file.encryption_status,
-                                                storage_type=url_components.scheme, file_type=agent_file.file_type,
+                                                storage_type=agent_file.storage_type, file_type=agent_file.file_type,
                                                 compression_type=agent_file.compression_type, bucket=existing_bucket)
                 # associate file with agent
-                AgentFile.get_or_create(agent=existing_agent, file=existing_file, organization_id=existing_agent.organization)
+                AgentFile.get_or_create(agent=existing_agent, file=existing_file,
+                                        organization_id=existing_agent.organization)
                 # associate bucket with agent
-                AgentBucket.get_or_create(agent=existing_agent, bucket=existing_bucket, organization_id=existing_agent.organization)
+                AgentBucket.get_or_create(agent=existing_agent, bucket=existing_bucket,
+                                          organization_id=existing_agent.organization)
         except DoesNotExist:
             raise HTTPException(status_code=404, detail="Agent not found")
     else:
@@ -182,6 +185,63 @@ async def files(agent_file_container: AgentFiles, authorization: Annotated[list[
 @app.post("/v1/health/")
 async def health(agent: Agent, authorization: Annotated[list[str] | None, Header()] = None):
     return await register_agent(agent, authorization)
+
+
+def get_file_user_permission(existing_file, user_name):
+    return UserFilePermissions.select().where(UserFilePermissions.file == existing_file).where(
+        UserFilePermissions.user == user_name).get()
+
+
+@app.post("/v1/user_file_permissions/")
+async def user_file_permissions(user_file_permissions: list[UserFilePermission],
+                                authorization: Annotated[list[str] | None, Header()] = None):
+    agent_token, is_valid = validate_token(get_bearer_token_from_header(authorization))
+    if is_valid:
+        for permission in user_file_permissions:
+            existing_file = None
+            try:
+                # lookup file
+                existing_file = get_file(file_url=permission.file_url)
+            except DoesNotExist:
+                raise HTTPException(status_code=404, detail="Not Found")
+            try:
+                existing_permission = get_file_user_permission(existing_file, permission.user_name)
+                existing_permission.permissions = permission.permissions
+                existing_permission.updated_at = datetime.now()
+                existing_permission.save()
+                # update if found
+            except DoesNotExist:
+                # insert if not found
+                UserFilePermissions.create(organization_id=existing_file.organization, file=existing_file,
+                                           permissions=permission.permissions, user=permission.user_name)
+    else:
+        raise HTTPException(status_code=401, detail="Not Authorized")
+
+
+@app.post("/v1/file_audits/")
+async def file_audit_lines(audit_container: AgentFileAuditContainer, authorization: Annotated[list[str] | None, Header()] = None):
+    agent_token, is_valid = validate_token(get_bearer_token_from_header(authorization))
+    if is_valid:
+        existing_agent = None
+        # get Agent based on UUID
+        try:
+            existing_agent = get_agent(audit_container.agent_uuid)
+            for audit_line in audit_container.audit_lines:
+                file_name: str
+                user_name: str
+                operation: str
+                AgentFileAudit.create(agent=existing_agent,
+                                      organization=existing_agent.organization,
+                                      file_name=audit_line.file_name,
+                                      user_name=audit_line.user_name,
+                                      user_email=audit_line.user_email,
+                                      operation=audit_line.operation)
+        except DoesNotExist:
+            raise HTTPException(status_code=404, detail="Agent not found")
+    else:
+        raise HTTPException(status_code=401, detail="Not Authorized")
+
+    return {"message": "success", "agent_id": existing_agent.id}
 
 
 if __name__ == "__main__":
